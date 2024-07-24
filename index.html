@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canvas Assistant Bot</title>
+    <style>
+        #chat-box {
+            width: 300px;
+            height: 400px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+        }
+        #user-input {
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-box"></div>
+    <input type="text" id="user-input" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        function sendMessage() {
+            const userInput = document.getElementById('user-input').value;
+            const chatBox = document.getElementById('chat-box');
+    
+            // Display user message
+            const userMessage = document.createElement('div');
+            userMessage.textContent = 'You: ' + userInput;
+            chatBox.appendChild(userMessage);
+    
+            // Send message to backend
+            fetch('http://127.0.0.1:5000/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: userInput })
+            })
+            .then(response => {
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+    return response.json();
+})
+.then(data => {
+    const botMessage = document.createElement('div');
+    botMessage.textContent = 'Bot: ' + data.response;
+    chatBox.appendChild(botMessage);
+})
+.catch(error => {
+    console.error('Error:', error);
+    const errorMessage = document.createElement('div');
+    errorMessage.textContent = 'There was an error: ' + error.message;
+    chatBox.appendChild(errorMessage);
+});
+
+
+        }
+    </script>
+    
+</body>
+</html>
