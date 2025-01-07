@@ -1,0 +1,29 @@
+# Flask and Extensions
+Flask==2.2.5
+Werkzeug==2.2.3
+Flask-Login==0.6.2
+Flask-WTF==1.1.1
+Flask-Bcrypt==1.0.1
+Flask-SQLAlchemy==2.5.1
+SQLAlchemy<2.0
+
+# Other Dependencies
+python-dotenv==1.0.1
+requests==2.31.0
+
+# Google API Clients (if needed)
+google-api-python-client==2.89.0
+google-auth==2.21.0
+google-auth-httplib2==0.1.0
+httplib2==0.22.0
+
+# Additional Dependencies (if needed)
+cachetools==5.3.1
+pyasn1==0.5.0
+pyasn1-modules==0.3.0
+rsa==4.9
+urllib3==1.26.16
+idna==3.4
+certifi==2023.7.22
+charset-normalizer==3.2.0
+colorama==0.4.6

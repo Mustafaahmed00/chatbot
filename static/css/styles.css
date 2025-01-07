@@ -1,0 +1,248 @@
+/* Dark mode variables */
+:root {
+    --bot-message-bg: #f1f3f4;
+    --user-message-bg: #1a73e8;
+    --bg-color: #ffffff;
+    --text-color: #202124;
+    --border-color: #e0e0e0;
+}
+
+[data-theme="dark"] {
+    --bot-message-bg: #303134;
+    --user-message-bg: #8ab4f8;
+    --bg-color: #202124;
+    --text-color: #e8eaed;
+    --border-color: #3c4043;
+}
+
+/* Chatbot container */
+#chatbot-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 380px;
+    max-width: calc(100vw - 40px);
+    background: var(--bg-color);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+/* Header */
+.header {
+    background: #1a73e8;
+    color: white;
+    padding: 16px;
+    border-radius: 12px 12px 0 0;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Toggle icon */
+.toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+#chatbot-container.collapsed .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Messages container */
+.messages {
+    height: 400px;
+    overflow-y: auto;
+    padding: 16px;
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+/* Message styles */
+.message {
+    margin-bottom: 16px;
+    max-width: 80%;
+    clear: both;
+}
+
+.message.bot {
+    float: left;
+}
+
+.message.user {
+    float: right;
+}
+
+.message-content {
+    padding: 12px 16px;
+    border-radius: 16px;
+    position: relative;
+    line-height: 1.4;
+}
+
+.bot .message-content {
+    background: var(--bot-message-bg);
+    color: var(--text-color);
+    border-bottom-left-radius: 4px;
+}
+
+.user .message-content {
+    background: var(--user-message-bg);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+/* Input area */
+.input-area {
+    padding: 16px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-color);
+}
+
+.input-group {
+    display: flex;
+    gap: 8px;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+/* Buttons */
+button {
+    padding: 10px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.voice-btn {
+    background: #f1f3f4;
+    color: var(--text-color);
+}
+
+.voice-btn.recording {
+    background: #dc3545;
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+
+.tts-btn {
+    background: #f1f3f4;
+    color: var(--text-color);
+}
+
+.tts-btn.active {
+    background: #28a745;
+    color: white;
+}
+
+.send-btn {
+    background: #1a73e8;
+    color: white;
+}
+
+/* Voice recording animation */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Loading dots */
+.typing-dots:after {
+    content: '...';
+    animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80% { content: '...'; }
+}
+
+/* Bullet points in bot messages */
+.message.bot ul {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.message.bot li {
+    margin-bottom: 6px;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+    #chatbot-container {
+        width: 100%;
+        max-width: 100%;
+        right: 0;
+        bottom: 0;
+        border-radius: 0;
+    }
+    
+    .header {
+        border-radius: 0;
+    }
+}
+.stop-tts-btn {
+    background: #dc3545;
+    color: white;
+}
+
+.stop-tts-btn:hover {
+    background: #c82333;
+}
+
+/* Voice button states */
+.voice-btn {
+    transition: all 0.3s ease;
+}
+
+.voice-btn.recording {
+    background-color: #dc3545;
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* TTS button states */
+.tts-btn.active {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Dark mode styles */
+.dark-mode {
+    --bot-message-bg: #303134;
+    --user-message-bg: #8ab4f8;
+    --bg-color: #202124;
+    --text-color: #e8eaed;
+    --border-color: #3c4043;
+}
+
+/* Error message */
+.message.error .message-content {
+    background-color: #fdeaeb;
+    color: #dc3545;
+}
+
+.dark-mode .message.error .message-content {
+    background-color: #350d0f;
+    color: #ff8589;
+}
