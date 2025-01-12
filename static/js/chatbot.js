@@ -34,16 +34,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="input-area">
                     <form id="chat-form">
                         <div class="input-group">
-                            <input type="text" placeholder="Type your message...">
-                            <button type="button" class="voice-btn">
-                                <i class="fas fa-microphone"></i>
-                            </button>
-                            <button type="button" class="tts-btn">
-                                <i class="fas fa-volume-up"></i>
-                            </button>
-                            <button type="submit" class="send-btn">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
+                        <input type="text" placeholder="Type your message...">
+                        <button type="button" class="voice-btn" aria-label="Voice input">
+                        <i class="fas fa-microphone" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="tts-btn" aria-label="Text to speech">
+                        <i class="fas fa-volume-up" aria-hidden="true"></i>
+                        </button>
+                        <button type="submit" class="send-btn" aria-label="Send message">
+                        <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                         </button>
                         </div>
                     </form>
                 </div>
@@ -72,12 +72,28 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Dark mode toggle
-    themeButton.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
+    // Dark mode toggle
+themeButton.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const icon = themeButton.querySelector('i');
+    icon.classList.toggle('fa-moon');
+    icon.classList.toggle('fa-sun');
+    
+    // Save preference
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDarkMode);
+});
+
+// Add this to maintain dark mode preference across page reloads
+document.addEventListener('DOMContentLoaded', () => {
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+    if (isDarkMode) {
+        document.body.classList.add('dark-mode');
         const icon = themeButton.querySelector('i');
-        icon.classList.toggle('fa-moon');
-        icon.classList.toggle('fa-sun');
-    });
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+    }
+});
 
     // Voice input handling
     if (recognition) {

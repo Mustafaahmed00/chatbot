@@ -246,3 +246,28 @@ button {
     background-color: #350d0f;
     color: #ff8589;
 }
+/* Dark mode styles */
+.dark-mode .input-group button {
+    background-color: #374151;
+    color: #ffffff;
+}
+
+.dark-mode .input-group button:hover {
+    background-color: #4B5563;
+}
+
+.dark-mode .input-group input {
+    background-color: #1F2937;
+    color: #ffffff;
+    border-color: #374151;
+}
+
+.dark-mode .input-group button.recording {
+    background-color: #DC2626;
+    color: #ffffff;
+}
+
+.dark-mode .input-group button.active {
+    background-color: #2563EB;
+    color: #ffffff;
+}

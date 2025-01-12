@@ -35,8 +35,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 def load_user(user_id):
     return Admin.query.get(int(user_id))
 
-@app.before_first_request
-def create_tables():
+with app.app_context():
     db.create_all()
     if not Admin.query.first():
         admin_username = os.environ.get('ADMIN_USERNAME')
@@ -56,28 +55,6 @@ def index():
 def get_response():
     user_input = request.form.get('message', '').strip().lower()
     
-    # Handle greetings
-    greetings = ['hi', 'hello', 'hey', 'hola', 'greetings']
-    if user_input in greetings:
-        return jsonify({
-            'answer': """Hi! I'm your Canvas assistant. Here's how I can help you:
-- Ask questions about Canvas features and functionality
-- Get help with assignments, grades, and course materials
-- Learn about Canvas tools and settings
-- Get step-by-step guidance for common tasks
-
-What would you like to know about?"""
-        })
-
-    # Check database for answer
-    qa = QA.query.filter_by(question=user_input).first()
-    if qa:
-        answer = qa.answer
-        if not any(line.strip().startswith('-') for line in answer.split('\n')):
-            sentences = [s.strip() for s in answer.split('.') if s.strip()]
-            answer = '\n'.join([f"- {s}." for s in sentences])
-        return jsonify({'answer': answer})
-
     try:
         generation_config = {
             "temperature": 0.7,
@@ -87,22 +64,19 @@ What would you like to know about?"""
         }
 
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-2.0-flash-exp",
             generation_config=generation_config,
         )
 
         chat_session = model.start_chat()
 
         prompt = f"""
-        As a Canvas LMS expert, please provide a helpful and friendly response to the following question. Your response should:
-        - Always start with a brief greeting or acknowledgment
-        - Break down the information into clear bullet points using "-" at the start of each point
-        - Use a conversational, friendly tone
-        - Focus on Canvas LMS features and functionality
-        - Include specific steps or examples when relevant
-        - End with a gentle prompt for follow-up questions
-        
-        Format each main point as a new bullet point starting with "-".
+        As a Canvas LMS expert, provide a helpful response to this question about Canvas. Your response must:
+        1. Start with "Hi!" or a similar greeting on the first line
+        2. Follow with a brief introduction sentence
+        3. Use ONLY dash/hyphen (-) for bullet points (not *, • or **)
+        4. Put each bullet point on a new line
+        5. Replace any ** with bullet points using -
         
         Question: {user_input}
         """
@@ -110,13 +84,22 @@ What would you like to know about?"""
         response = chat_session.send_message(prompt)
         answer = response.text.strip()
         
-        # Ensure response has bullet points
-        if not any(line.strip().startswith('-') for line in answer.split('\n')):
-            sentences = [s.strip() for s in answer.split('.') if s.strip()]
-            answer = '\n'.join([f"- {s}." for s in sentences])
+        # Remove any ** markers and convert to proper bullet points
+        answer = answer.replace('**', '')
+        
+        # Convert lines starting with asterisks to bullet points
+        lines = answer.split('\n')
+        formatted_lines = []
+        for line in lines:
+            line = line.strip()
+            if line.startswith('*'):
+                line = '- ' + line[1:].strip()
+            formatted_lines.append(line)
+        
+        answer = '\n'.join(formatted_lines)
         
         # Add follow-up prompt if not present
-        if not answer.lower().endswith('?'):
+        if not any(line.strip().lower().endswith('?') for line in answer.split('\n')):
             answer += "\n\n- Is there anything specific you'd like me to clarify?"
 
         return jsonify({'answer': answer})
@@ -124,10 +107,12 @@ What would you like to know about?"""
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({
-            'answer': """I apologize, but I'm having trouble processing your request right now. Here are some suggestions:
+            'answer': """Hi! I apologize, but I'm having trouble right now.
+
 - Please try asking your question again
-- Make sure your question is specific to Canvas LMS
-- Try breaking down complex questions into simpler ones"""
+- Make sure your question is about Canvas LMS
+- Try rephrasing your question
+- Break down complex questions into simpler ones"""
         })
 
 # Admin routes
