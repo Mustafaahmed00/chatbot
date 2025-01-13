@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 
-from extensions import db, bcrypt, login_manager
-from models import Admin, QA
+from extensions import db, bcrypt, login_manager, migrate
+from models import Admin, QA, ResponseFeedback
 from forms import AdminLoginForm, AddQAForm, EditAdminForm
 
 import google.generativeai as genai
@@ -25,6 +25,8 @@ bcrypt.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'admin_login'
 
+migrate.init_app(app, db)
+
 # Configure Gemini API
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 if not GEMINI_API_KEY:
@@ -35,25 +37,51 @@ genai.configure(api_key=GEMINI_API_KEY)
 def load_user(user_id):
     return Admin.query.get(int(user_id))
 
-with app.app_context():
-    db.create_all()
-    if not Admin.query.first():
-        admin_username = os.environ.get('ADMIN_USERNAME')
-        admin_password = os.environ.get('ADMIN_PASSWORD')
-        if not admin_username or not admin_password:
-            raise ValueError("No admin credentials set")
-        hashed_password = bcrypt.generate_password_hash(admin_password).decode('utf-8')
-        admin = Admin(username=admin_username, password=hashed_password)
-        db.session.add(admin)
-        db.session.commit()
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@app.route('/submit_feedback', methods=['POST'])
+def submit_feedback():
+    try:
+        data = request.get_json()
+        response_id = data.get('responseId')
+        is_positive = data.get('isPositive')
+        session_id = data.get('sessionId')
+        metadata = data.get('metadata', {})
+
+        qa = QA.query.get(response_id)
+        if not QA.query.filter_by(question="test question").first():
+            test_qa = QA(
+            question="test question",
+            answer="Hi! Here's a test answer.\n\n- This is a test bullet point\n- Here's another one\n- Is there anything else you'd like to know?",
+        )
+        db.session.add(test_qa)
+        db.session.commit()
+
+        # Create feedback record
+        feedback = ResponseFeedback(
+            qa_id=response_id,
+            is_positive=is_positive,
+            session_id=session_id,
+            metadata=metadata
+        )
+        db.session.add(feedback)
+
+        # Update QA feedback counts and score
+        qa.add_feedback(is_positive)
+        
+        db.session.commit()
+        return jsonify({'message': 'Feedback recorded successfully'}), 200
+
+    except Exception as e:
+        print(f"Error recording feedback: {str(e)}")
+        return jsonify({'error': 'Failed to record feedback'}), 500
+
 @app.route('/get_response', methods=['POST'])
 def get_response():
     user_input = request.form.get('message', '').strip().lower()
+    print(f"Received input: {user_input}")  # Debug log
     
     try:
         generation_config = {
@@ -84,6 +112,15 @@ def get_response():
         response = chat_session.send_message(prompt)
         answer = response.text.strip()
         
+        # Save the response to database
+        new_qa = QA(
+            question=user_input,
+            answer=answer
+        )
+        db.session.add(new_qa)
+        db.session.commit()
+        print(f"Saved response with ID: {new_qa.id}")  # Debug log
+        
         # Remove any ** markers and convert to proper bullet points
         answer = answer.replace('**', '')
         
@@ -102,17 +139,51 @@ def get_response():
         if not any(line.strip().lower().endswith('?') for line in answer.split('\n')):
             answer += "\n\n- Is there anything specific you'd like me to clarify?"
 
-        return jsonify({'answer': answer})
+        return jsonify({
+            'answer': answer,
+            'responseId': new_qa.id  # Now we're returning the actual response ID
+        })
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({
-            'answer': """Hi! I apologize, but I'm having trouble right now.
+        print(f"Error: {str(e)}")  # Debug log
+        error_response = """Hi! I apologize, but I'm having trouble right now.
 
 - Please try asking your question again
 - Make sure your question is about Canvas LMS
 - Try rephrasing your question
 - Break down complex questions into simpler ones"""
+        
+        return jsonify({
+            'answer': error_response,
+            'responseId': None
+        })
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        error_response = """Hi! I apologize, but I'm having trouble right now.
+
+- Please try asking your question again
+- Make sure your question is about Canvas LMS
+- Try rephrasing your question
+- Break down complex questions into simpler ones"""
+        
+        return jsonify({
+            'answer': error_response,
+            'responseId': None
+        })
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        error_response = """Hi! I apologize, but I'm having trouble right now.
+
+- Please try asking your question again
+- Make sure your question is about Canvas LMS
+- Try rephrasing your question
+- Break down complex questions into simpler ones"""
+        
+        return jsonify({
+            'answer': error_response,
+            'responseId': None
         })
 
 # Admin routes

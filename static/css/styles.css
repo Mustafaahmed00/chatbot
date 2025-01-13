@@ -271,3 +271,67 @@ button {
     background-color: #2563EB;
     color: #ffffff;
 }
+
+/* Add these styles to your existing styles.css */
+
+.feedback-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+}
+
+.feedback-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 15px;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.feedback-btn:hover {
+    background: var(--border-color);
+}
+
+.feedback-btn.positive:hover {
+    background: #e6ffe6;
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.feedback-btn.negative:hover {
+    background: #ffe6e6;
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.feedback-thank-you {
+    text-align: center;
+    color: #28a745;
+    font-size: 0.9em;
+    margin-top: 8px;
+}
+
+/* Dark mode styles */
+.dark-mode .feedback-btn {
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+.dark-mode .feedback-btn.positive:hover {
+    background: #0d3d1d;
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.dark-mode .feedback-btn.negative:hover {
+    background: #3d0d0d;
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.dark-mode .feedback-thank-you {
+    color: #28a745;
+}

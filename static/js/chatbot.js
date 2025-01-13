@@ -34,16 +34,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="input-area">
                     <form id="chat-form">
                         <div class="input-group">
-                        <input type="text" placeholder="Type your message...">
-                        <button type="button" class="voice-btn" aria-label="Voice input">
-                        <i class="fas fa-microphone" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" class="tts-btn" aria-label="Text to speech">
-                        <i class="fas fa-volume-up" aria-hidden="true"></i>
-                        </button>
-                        <button type="submit" class="send-btn" aria-label="Send message">
-                        <i class="fas fa-paper-plane" aria-hidden="true"></i>
-                         </button>
+                            <input type="text" placeholder="Type your message...">
+                            <button type="button" class="voice-btn" aria-label="Voice input">
+                                <i class="fas fa-microphone" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" class="tts-btn" aria-label="Text to speech">
+                                <i class="fas fa-volume-up" aria-hidden="true"></i>
+                            </button>
+                            <button type="submit" class="send-btn" aria-label="Send message">
+                                <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -62,7 +62,124 @@ document.addEventListener('DOMContentLoaded', function() {
     const ttsButton = chatForm.querySelector('.tts-btn');
     const themeButton = chatbotContainer.querySelector('.theme-btn');
 
-    // Toggle chatbot
+    // Feedback functionality
+    function createFeedbackButtons(responseId) {
+        if (!responseId) return ''; // Don't show feedback for non-DB responses
+        
+        return `
+            <div class="feedback-buttons" data-response-id="${responseId}">
+                <button class="feedback-btn positive">
+                    <i class="fas fa-thumbs-up"></i>
+                </button>
+                <button class="feedback-btn negative">
+                    <i class="fas fa-thumbs-down"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    async function submitFeedback(responseId, isPositive) {
+        const feedbackContainer = document.querySelector(`[data-response-id="${responseId}"]`);
+        if (!feedbackContainer || feedbackContainer.classList.contains('feedback-submitted')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/submit_feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    responseId: responseId,
+                    isPositive: isPositive,
+                    sessionId: generateSessionId(),
+                    metadata: {
+                        timestamp: new Date().toISOString(),
+                        userAgent: navigator.userAgent
+                    }
+                })
+            });
+
+            if (response.ok) {
+                feedbackContainer.innerHTML = '<p class="feedback-thank-you">Thank you for your feedback!</p>';
+                feedbackContainer.classList.add('feedback-submitted');
+            } else {
+                console.error('Failed to submit feedback');
+            }
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+        }
+    }
+
+    function generateSessionId() {
+        return 'session_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // Message handling
+    function addMessage(text, type, responseId = null) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        
+        const bubble = document.createElement('div');
+        bubble.className = 'message-content';
+        
+        if (type === 'bot') {
+            const lines = text.split('\n').map(line => {
+                line = line.trim();
+                if (line.startsWith('-')) {
+                    return `<li>${line.substring(1).trim()}</li>`;
+                }
+                return `<p>${line}</p>`;
+            });
+
+            const hasBullets = lines.some(line => line.includes('<li>'));
+            bubble.innerHTML = hasBullets 
+                ? `<ul>${lines.join('')}</ul>` 
+                : lines.join('');
+                
+            // Add feedback buttons for bot messages
+            if (responseId) {
+                const feedbackHtml = createFeedbackButtons(responseId);
+                bubble.innerHTML += feedbackHtml;
+
+                // Add event listeners after the buttons are added to the DOM
+                setTimeout(() => {
+                    const feedbackContainer = bubble.querySelector('.feedback-buttons');
+                    if (feedbackContainer) {
+                        const positiveBtn = feedbackContainer.querySelector('.positive');
+                        const negativeBtn = feedbackContainer.querySelector('.negative');
+                        
+                        positiveBtn.addEventListener('click', () => submitFeedback(responseId, true));
+                        negativeBtn.addEventListener('click', () => submitFeedback(responseId, false));
+                    }
+                }, 0);
+            }
+        } else {
+            bubble.textContent = text;
+        }
+
+        
+    messageDiv.appendChild(bubble);
+    messagesContainer.appendChild(messageDiv);
+    
+    // Scroll calculation
+    const messageHeight = messageDiv.offsetHeight;
+    const containerHeight = messagesContainer.offsetHeight;
+    const scrollPosition = messagesContainer.scrollTop;
+    const totalScrollHeight = messagesContainer.scrollHeight;
+    
+    // If it's a bot message, scroll to show just the start of the message
+    if (type === 'bot') {
+        const newScrollPosition = totalScrollHeight - containerHeight - messageHeight;
+        messagesContainer.scrollTop = newScrollPosition;
+    } else {
+        // For user messages, scroll to bottom as before
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+}
+
+    // Event listeners
     header.addEventListener('click', (e) => {
         if (!e.target.closest('button')) {
             body.classList.toggle('hidden');
@@ -71,29 +188,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Dark mode toggle
-    // Dark mode toggle
-themeButton.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    const icon = themeButton.querySelector('i');
-    icon.classList.toggle('fa-moon');
-    icon.classList.toggle('fa-sun');
-    
-    // Save preference
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    localStorage.setItem('darkMode', isDarkMode);
-});
-
-// Add this to maintain dark mode preference across page reloads
-document.addEventListener('DOMContentLoaded', () => {
-    const isDarkMode = localStorage.getItem('darkMode') === 'true';
-    if (isDarkMode) {
-        document.body.classList.add('dark-mode');
+    themeButton.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
         const icon = themeButton.querySelector('i');
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-    }
-});
+        icon.classList.toggle('fa-moon');
+        icon.classList.toggle('fa-sun');
+        
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        localStorage.setItem('darkMode', isDarkMode);
+    });
 
     // Voice input handling
     if (recognition) {
@@ -134,22 +237,34 @@ document.addEventListener('DOMContentLoaded', () => {
         voiceButton.style.display = 'none';
     }
 
-    // Text-to-speech toggle
+    // Text-to-speech handling
+    function speakText(text) {
+        if (!('speechSynthesis' in window)) return;
+
+        window.speechSynthesis.cancel();
+        const cleanText = text.replace(/-/g, '').replace(/\n/g, ' ');
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'en-US';
+        utterance.rate = 1;
+        utterance.pitch = 1;
+
+        window.speechSynthesis.speak(utterance);
+    }
+
     ttsButton.addEventListener('click', () => {
         isVoiceEnabled = !isVoiceEnabled;
         ttsButton.classList.toggle('active');
         if (!isVoiceEnabled) {
-            window.speechSynthesis.cancel(); // Stop any ongoing speech
+            window.speechSynthesis.cancel();
         }
     });
 
-    // Handle form submission
+    // Form submission
     chatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const message = inputField.value.trim();
         if (!message) return;
 
-        // Add user message
         addMessage(message, 'user');
         inputField.value = '';
 
@@ -164,9 +279,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             
-            // Add bot response
             if (data.answer) {
-                addMessage(data.answer, 'bot');
+                addMessage(data.answer, 'bot', data.responseId);
                 if (isVoiceEnabled) {
                     speakText(data.answer);
                 }
@@ -177,50 +291,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function addMessage(text, type) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${type}`;
-        
-        const bubble = document.createElement('div');
-        bubble.className = 'message-content';
-        
-        if (type === 'bot') {
-            // Format bot messages with bullet points
-            const lines = text.split('\n').map(line => {
-                line = line.trim();
-                if (line.startsWith('-')) {
-                    return `<li>${line.substring(1).trim()}</li>`;
-                }
-                return `<p>${line}</p>`;
-            });
-
-            const hasBullets = lines.some(line => line.includes('<li>'));
-            bubble.innerHTML = hasBullets 
-                ? `<ul>${lines.join('')}</ul>` 
-                : lines.join('');
-        } else {
-            bubble.textContent = text;
-        }
-
-        messageDiv.appendChild(bubble);
-        messagesContainer.appendChild(messageDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    function speakText(text) {
-        if (!('speechSynthesis' in window)) return;
-
-        // Cancel any ongoing speech
-        window.speechSynthesis.cancel();
-
-        // Clean text for speech
-        const cleanText = text.replace(/-/g, '').replace(/\n/g, ' ');
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = 'en-US';
-        utterance.rate = 1;
-        utterance.pitch = 1;
-
-        window.speechSynthesis.speak(utterance);
+    // Initialize dark mode if previously set
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+    if (isDarkMode) {
+        document.body.classList.add('dark-mode');
+        const icon = themeButton.querySelector('i');
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
     }
 
     // Add initial message
