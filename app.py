@@ -13,7 +13,7 @@ from models import Admin, QA, ResponseFeedback
 from forms import AdminLoginForm, AddQAForm, EditAdminForm
 from google.cloud import translate_v2 as translate
 
-translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON"))
 
 # Load environment variables
 load_dotenv()
@@ -40,7 +40,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 # Initialize Google Cloud Translation client
 try:
-    translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+    translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON"))
     logging.info("Translation client initialized successfully.")
 except Exception as e:
     logging.error(f"Error initializing translation client: {e}")
