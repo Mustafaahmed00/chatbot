@@ -1,0 +1,39 @@
+# Ignore the .env file (contains sensitive information)
+.env
+
+# Ignore virtual environment directories
+.venv/
+venv/
+env/
+
+# Ignore Python compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
+
+# Ignore package directories
+node_modules/
+bower_components/
+
+# Ignore database files
+*.db
+*.sqlite3
+
+# Ignore logs and local settings
+logs/
+*.log
+local_settings.py
+
+# Ignore distribution and build files
+dist/
+build/
+*.egg-info/
+
+# Ignore all .json files
+*.json
