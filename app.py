@@ -3,12 +3,17 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, f
 from dotenv import load_dotenv
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from langid import classify as detect_language
+from google.cloud import translate_v2 as translate
+import google.generativeai as genai
+import logging
 
 from extensions import db, bcrypt, login_manager, migrate
 from models import Admin, QA, ResponseFeedback
 from forms import AdminLoginForm, AddQAForm, EditAdminForm
+from google.cloud import translate_v2 as translate
 
-import google.generativeai as genai
+translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
 
 # Load environment variables
 load_dotenv()
@@ -33,6 +38,17 @@ if not GEMINI_API_KEY:
     raise ValueError("No GEMINI_API_KEY set for the application")
 genai.configure(api_key=GEMINI_API_KEY)
 
+# Initialize Google Cloud Translation client
+try:
+    translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+    logging.info("Translation client initialized successfully.")
+except Exception as e:
+    logging.error(f"Error initializing translation client: {e}")
+    exit(1)
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+
 @login_manager.user_loader
 def load_user(user_id):
     return Admin.query.get(int(user_id))
@@ -51,13 +67,8 @@ def submit_feedback():
         metadata = data.get('metadata', {})
 
         qa = QA.query.get(response_id)
-        if not QA.query.filter_by(question="test question").first():
-            test_qa = QA(
-            question="test question",
-            answer="Hi! Here's a test answer.\n\n- This is a test bullet point\n- Here's another one\n- Is there anything else you'd like to know?",
-        )
-        db.session.add(test_qa)
-        db.session.commit()
+        if not qa:
+            return jsonify({'error': 'Invalid response ID'}), 400
 
         # Create feedback record
         feedback = ResponseFeedback(
@@ -75,14 +86,42 @@ def submit_feedback():
         return jsonify({'message': 'Feedback recorded successfully'}), 200
 
     except Exception as e:
-        print(f"Error recording feedback: {str(e)}")
+        logging.error(f"Error recording feedback: {str(e)}")
         return jsonify({'error': 'Failed to record feedback'}), 500
+
+# Function to translate text
+def translate_text(text, target_language="en"):
+    try:
+        translation = translate_client.translate(text, target_language=target_language)
+        return translation['translatedText']
+    except Exception as e:
+        logging.error(f"Translation error: {e}")
+        return f"Translation error: {str(e)}"
 
 @app.route('/get_response', methods=['POST'])
 def get_response():
     user_input = request.form.get('message', '').strip().lower()
-    print(f"Received input: {user_input}")  # Debug log
     
+    # Detect the language of the user input
+    try:
+        user_lang, _ = detect_language(user_input)
+        logging.debug(f"Detected user language: {user_lang}")
+    except Exception as e:
+        logging.error(f"Language detection error: {e}")
+        user_lang = 'en'  # Default to English if detection fails
+    
+    # Translate the input to English for processing
+    if user_lang != 'en':
+        try:
+            translated_input = translate_text(user_input, target_language="en")
+            logging.debug(f"Translated input: {translated_input}")
+        except Exception as e:
+            logging.error(f"Translation error: {e}")
+            translated_input = user_input
+    else:
+        translated_input = user_input
+    
+    # Process the translated input
     try:
         generation_config = {
             "temperature": 0.7,
@@ -106,25 +145,30 @@ def get_response():
         4. Put each bullet point on a new line
         5. Replace any ** with bullet points using -
         
-        Question: {user_input}
+        Question: {translated_input}
         """
 
         response = chat_session.send_message(prompt)
         answer = response.text.strip()
         
-        # Save the response to database
+        # Translate the response back to the user's language
+        if user_lang != 'en':
+            try:
+                answer = translate_text(answer, target_language=user_lang)
+                logging.debug(f"Translated response: {answer}")
+            except Exception as e:
+                logging.error(f"Translation error: {e}")
+        
+        # Save the response to the database
         new_qa = QA(
             question=user_input,
             answer=answer
         )
         db.session.add(new_qa)
         db.session.commit()
-        print(f"Saved response with ID: {new_qa.id}")  # Debug log
         
-        # Remove any ** markers and convert to proper bullet points
+        # Format the answer with bullet points
         answer = answer.replace('**', '')
-        
-        # Convert lines starting with asterisks to bullet points
         lines = answer.split('\n')
         formatted_lines = []
         for line in lines:
@@ -135,17 +179,27 @@ def get_response():
         
         answer = '\n'.join(formatted_lines)
         
-        # Add follow-up prompt if not present
-        if not any(line.strip().lower().endswith('?') for line in answer.split('\n')):
-            answer += "\n\n- Is there anything specific you'd like me to clarify?"
+        # Add follow-up prompt if not present (translate it to the user's language)
+        follow_up_prompt = "Is there anything specific you'd like me to clarify?"
+        if user_lang != 'en':
+            try:
+                follow_up_prompt = translate_text(follow_up_prompt, target_language=user_lang)
+            except Exception as e:
+                logging.error(f"Translation error: {e}")
+        answer += f"\n\n- {follow_up_prompt}"
+
+        # Detect the language of the final response
+        response_lang, _ = detect_language(answer)
+        logging.debug(f"Detected response language: {response_lang}")
 
         return jsonify({
             'answer': answer,
-            'responseId': new_qa.id  # Now we're returning the actual response ID
+            'responseId': new_qa.id,
+            'responseLang': response_lang  # Return the detected language
         })
 
     except Exception as e:
-        print(f"Error: {str(e)}")  # Debug log
+        logging.error(f"Error: {str(e)}")
         error_response = """Hi! I apologize, but I'm having trouble right now.
 
 - Please try asking your question again
@@ -153,37 +207,17 @@ def get_response():
 - Try rephrasing your question
 - Break down complex questions into simpler ones"""
         
-        return jsonify({
-            'answer': error_response,
-            'responseId': None
-        })
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        error_response = """Hi! I apologize, but I'm having trouble right now.
-
-- Please try asking your question again
-- Make sure your question is about Canvas LMS
-- Try rephrasing your question
-- Break down complex questions into simpler ones"""
+        # Translate the error response to the user's language
+        if user_lang != 'en':
+            try:
+                error_response = translate_text(error_response, target_language=user_lang)
+            except Exception as e:
+                logging.error(f"Translation error: {e}")
         
         return jsonify({
             'answer': error_response,
-            'responseId': None
-        })
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        error_response = """Hi! I apologize, but I'm having trouble right now.
-
-- Please try asking your question again
-- Make sure your question is about Canvas LMS
-- Try rephrasing your question
-- Break down complex questions into simpler ones"""
-        
-        return jsonify({
-            'answer': error_response,
-            'responseId': None
+            'responseId': None,
+            'responseLang': user_lang  # Return the user's language for error responses
         })
 
 # Admin routes

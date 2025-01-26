@@ -116,8 +116,46 @@ document.addEventListener('DOMContentLoaded', function() {
         return 'session_' + Math.random().toString(36).substr(2, 9);
     }
 
+    // Add a "Translate to English" button only if the text is not in English
+    function addTranslateButton(messageDiv, text, responseLang) {
+        if (responseLang === 'en') {
+            return; // Don't show the button if the text is already in English
+        }
+
+        const translateButton = document.createElement('button');
+        translateButton.className = 'translate-btn';
+        translateButton.innerHTML = '<i class="fas fa-language"></i> Translate to English';
+        translateButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        target_lang: 'en'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.translated_text) {
+                    const translatedDiv = document.createElement('div');
+                    translatedDiv.className = 'translated-message';
+                    translatedDiv.textContent = data.translated_text;
+                    messageDiv.appendChild(translatedDiv);
+                    translateButton.remove(); // Remove the button after translation
+                }
+            } catch (error) {
+                console.error('Error translating:', error);
+            }
+        });
+
+        messageDiv.appendChild(translateButton);
+    }
+
     // Message handling
-    function addMessage(text, type, responseId = null) {
+    function addMessage(text, type, responseId = null, responseLang = 'en') {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}`;
         
@@ -155,29 +193,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }, 0);
             }
+
+            // Add translation button only if the response is not in English
+            addTranslateButton(messageDiv, text, responseLang);
         } else {
             bubble.textContent = text;
         }
 
+        messageDiv.appendChild(bubble);
+        messagesContainer.appendChild(messageDiv);
         
-    messageDiv.appendChild(bubble);
-    messagesContainer.appendChild(messageDiv);
-    
-    // Scroll calculation
-    const messageHeight = messageDiv.offsetHeight;
-    const containerHeight = messagesContainer.offsetHeight;
-    const scrollPosition = messagesContainer.scrollTop;
-    const totalScrollHeight = messagesContainer.scrollHeight;
-    
-    // If it's a bot message, scroll to show just the start of the message
-    if (type === 'bot') {
-        const newScrollPosition = totalScrollHeight - containerHeight - messageHeight;
-        messagesContainer.scrollTop = newScrollPosition;
-    } else {
-        // For user messages, scroll to bottom as before
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        // Scroll calculation
+        const messageHeight = messageDiv.offsetHeight;
+        const containerHeight = messagesContainer.offsetHeight;
+        const scrollPosition = messagesContainer.scrollTop;
+        const totalScrollHeight = messagesContainer.scrollHeight;
+        
+        // If it's a bot message, scroll to show just the start of the message
+        if (type === 'bot') {
+            const newScrollPosition = totalScrollHeight - containerHeight - messageHeight;
+            messagesContainer.scrollTop = newScrollPosition;
+        } else {
+            // For user messages, scroll to bottom as before
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
     }
-}
 
     // Event listeners
     header.addEventListener('click', (e) => {
@@ -280,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (data.answer) {
-                addMessage(data.answer, 'bot', data.responseId);
+                addMessage(data.answer, 'bot', data.responseId, data.responseLang);
                 if (isVoiceEnabled) {
                     speakText(data.answer);
                 }

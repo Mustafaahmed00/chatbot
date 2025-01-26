@@ -335,3 +335,25 @@ button {
 .dark-mode .feedback-thank-you {
     color: #28a745;
 }
+
+/* Add this to your styles.css */
+.translate-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    margin-top: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.translate-btn:hover {
+    background-color: #45a049;
+}
+
+.translated-message {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f1f1f1;
+    border-radius: 5px;
+}
