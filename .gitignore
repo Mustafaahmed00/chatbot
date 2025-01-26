@@ -1,6 +1,8 @@
 # Ignore the .env file (contains sensitive information)
 .env
 
+database.db
+
 # Ignore virtual environment directories
 .venv/
 venv/
