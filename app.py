@@ -11,11 +11,8 @@ import logging
 from extensions import db, bcrypt, login_manager, migrate
 from models import Admin, QA, ResponseFeedback
 from forms import AdminLoginForm, AddQAForm, EditAdminForm
-from google.cloud import translate_v2 as translate
 
-translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON"))
-
-# Load environment variables
+# Load environment variables first
 load_dotenv()
 
 # Initialize Flask app
@@ -31,6 +28,14 @@ login_manager.init_app(app)
 login_manager.login_view = 'admin_login'
 
 migrate.init_app(app, db)
+
+# Initialize Google Cloud Translation client
+try:
+    translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON"))
+    logging.info("Translation client initialized successfully.")
+except Exception as e:
+    logging.error(f"Error initializing translation client: {e}")
+    exit(1)
 
 # Configure Gemini API
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
