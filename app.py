@@ -286,7 +286,7 @@ def admin_logout():
     logout_user()
     return redirect(url_for('index'))
 
-app = Flask(__name__)
+#app = Flask(__name__)
 #if __name__ == '__main__':
     #port = int(os.getenv("PORT", 5000))
     #app.run(host="0.0.0.0", port=port, debug=True)
