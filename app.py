@@ -255,7 +255,7 @@ def add_qa():
         return redirect(url_for('admin_dashboard'))
     return render_template('admin/add_qa.html', form=form)
 
-@app.route('/admin/edit/<int:qa_id>', methods=['GET', 'POST'])
+@app.route('/admin/edit/<int:qa_id>', methods=['GET', 'POST']) #route
 @login_required
 def edit_qa(qa_id):
     qa = QA.query.get_or_404(qa_id)
@@ -290,4 +290,4 @@ def admin_logout():
 #if __name__ == '__main__':
     #port = int(os.getenv("PORT", 5000))
     #app.run(host="0.0.0.0", port=port, debug=True)
-    #lets see if it works
+    #lets see if it works.
