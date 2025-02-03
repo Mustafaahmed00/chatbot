@@ -21,3 +21,4 @@ python-dotenv==1.0.1
 requests==2.31.0
 SQLAlchemy==1.4.50
 gunicorn
+Werkzeug==2.2.3
