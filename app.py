@@ -1,12 +1,14 @@
 import os
+import json
+import logging
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 from dotenv import load_dotenv
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from langid import classify as detect_language
 from google.cloud import translate_v2 as translate
+from google.oauth2 import service_account
 import google.generativeai as genai
-import logging
 
 from extensions import db, bcrypt, login_manager, migrate
 from models import Admin, QA, ResponseFeedback
@@ -26,12 +28,18 @@ db.init_app(app)
 bcrypt.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'admin_login'
-
 migrate.init_app(app, db)
 
-# Initialize Google Cloud Translation client
+# Initialize Google Cloud Translation client using the JSON credentials from the .env file
+credentials_json_str = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+if not credentials_json_str:
+    logging.error("Environment variable GOOGLE_APPLICATION_CREDENTIALS_JSON is not set.")
+    exit(1)
+
 try:
-    translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON"))
+    credentials_info = json.loads(credentials_json_str)
+    credentials = service_account.Credentials.from_service_account_info(credentials_info)
+    translate_client = translate.Client(credentials=credentials)
     logging.info("Translation client initialized successfully.")
 except Exception as e:
     logging.error(f"Error initializing translation client: {e}")
@@ -42,14 +50,6 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 if not GEMINI_API_KEY:
     raise ValueError("No GEMINI_API_KEY set for the application")
 genai.configure(api_key=GEMINI_API_KEY)
-
-# Initialize Google Cloud Translation client
-try:
-    translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON"))
-    logging.info("Translation client initialized successfully.")
-except Exception as e:
-    logging.error(f"Error initializing translation client: {e}")
-    exit(1)
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -255,7 +255,7 @@ def add_qa():
         return redirect(url_for('admin_dashboard'))
     return render_template('admin/add_qa.html', form=form)
 
-@app.route('/admin/edit/<int:qa_id>', methods=['GET', 'POST']) #route
+@app.route('/admin/edit/<int:qa_id>', methods=['GET', 'POST'])
 @login_required
 def edit_qa(qa_id):
     qa = QA.query.get_or_404(qa_id)
@@ -286,8 +286,7 @@ def admin_logout():
     logout_user()
     return redirect(url_for('index'))
 
-#app = Flask(__name__)
-#if __name__ == '__main__':
-    #port = int(os.getenv("PORT", 5000))
-    #app.run(host="0.0.0.0", port=port, debug=True)
-    #lets see if it works.
+# Uncomment the following lines if you want to run the app directly.
+# if __name__ == '__main__':
+#     port = int(os.getenv("PORT", 5000))
+#     app.run(host="0.0.0.0", port=port, debug=True)
