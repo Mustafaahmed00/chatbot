@@ -286,7 +286,6 @@ def admin_logout():
     logout_user()
     return redirect(url_for('index'))
 
-# Uncomment the following lines if you want to run the app directly.
-# if __name__ == '__main__':
-#     port = int(os.getenv("PORT", 5000))
-#     app.run(host="0.0.0.0", port=port, debug=True)
+if __name__ == '__main__':
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
