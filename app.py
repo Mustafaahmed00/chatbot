@@ -43,13 +43,6 @@ if not GEMINI_API_KEY:
     raise ValueError("No GEMINI_API_KEY set for the application")
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Initialize Google Cloud Translation client
-try:
-    translate_client = translate.Client.from_service_account_json(os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON"))
-    logging.info("Translation client initialized successfully.")
-except Exception as e:
-    logging.error(f"Error initializing translation client: {e}")
-    exit(1)
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -107,13 +100,32 @@ def translate_text(text, target_language="en"):
 def get_response():
     user_input = request.form.get('message', '').strip().lower()
     
-    # Detect the language of the user input
+    # First, check for exact match
+    existing_qa = QA.query.filter_by(question=user_input).first()
+    
+    # If no exact match, try similar questions using SQL LIKE
+    if not existing_qa:
+        similar_questions = QA.query.filter(
+            QA.question.like(f"%{user_input}%")
+        ).first()
+        if similar_questions:
+            existing_qa = similar_questions
+
+    if existing_qa:
+        logging.info(f"Found answer in database for: {user_input}")
+        return jsonify({
+            'answer': existing_qa.answer,
+            'responseId': existing_qa.id,
+            'responseLang': 'en'
+        })
+    
+    # If no match found in database, proceed with language detection and Gemini
     try:
         user_lang, _ = detect_language(user_input)
         logging.debug(f"Detected user language: {user_lang}")
     except Exception as e:
         logging.error(f"Language detection error: {e}")
-        user_lang = 'en'  # Default to English if detection fails
+        user_lang = 'en'
     
     # Translate the input to English for processing
     if user_lang != 'en':
@@ -142,16 +154,23 @@ def get_response():
 
         chat_session = model.start_chat()
 
-        prompt = f"""
-        As a Canvas LMS expert, provide a helpful response to this question about Canvas. Your response must:
-        1. Start with "Hi!" or a similar greeting on the first line
-        2. Follow with a brief introduction sentence
-        3. Use ONLY dash/hyphen (-) for bullet points (not *, • or **)
-        4. Put each bullet point on a new line
-        5. Replace any ** with bullet points using -
-        
-        Question: {translated_input}
-        """
+        prompt = f""" As a Canvas LMS expert, provide a helpful response to this question about Canvas. Your response must: 
+        1. Start with "Hi!" or a similar greeting on the first line 
+        2. Follow with a brief introduction sentence 
+        3. Use ONLY dash/hyphen (-) for bullet points (not *, • or **) 
+        4. Put each bullet point on a new line 
+        5. Replace any ** with bullet points using - 
+        6. Only answer questions about Canvas LMS 
+        7. If including links, format them as follows:    
+         -Start a new section with "Helpful Resources:"    
+         -Each resource on a new line starting with "-"    
+         -Put the link description first, no Parentheses
+         -include Helpful Resources links with every answer   
+        Helpful Resources:    
+         -Official Canvas Student Guide https://www.umb.edu/it/training-classroom-support/canvas-resources-for-students    
+         -UMB Canvas Support Page https://cases.canvaslms.com/liveagentchat?chattype=student&sfid=A5WgTEKARcWFY5IXRv5FT8ePIss19I2qCvHxwOtD 
+         -include these links with every answer
+         Question: {translated_input} """
 
         response = chat_session.send_message(prompt)
         answer = response.text.strip()
@@ -210,7 +229,12 @@ def get_response():
 - Please try asking your question again
 - Make sure your question is about Canvas LMS
 - Try rephrasing your question
-- Break down complex questions into simpler ones"""
+- Break down complex questions into simpler ones
+
+Helpful Resources:
+- Canvas Student Guide (https://community.canvaslms.com/t5/Canvas-Student-Guide/tkb-p/student)
+- UMB Canvas Support (https://www.umb.edu/canvas/)
+- Canvas Video Tutorials (https://community.canvaslms.com/t5/Video-Guide/tkb-p/videos)"""
         
         # Translate the error response to the user's language
         if user_lang != 'en':
@@ -260,16 +284,25 @@ def add_qa():
 def edit_qa(qa_id):
     qa = QA.query.get_or_404(qa_id)
     form = AddQAForm()
+    
     if form.validate_on_submit():
-        qa.question = form.question.data.lower()
-        qa.answer = form.answer.data
-        db.session.commit()
-        flash('Q&A updated successfully', 'success')
-        return redirect(url_for('admin_dashboard'))
+        try:
+            qa.question = form.question.data.lower().strip()
+            qa.answer = form.answer.data.strip()
+            db.session.commit()
+            flash('Q&A updated successfully', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating Q&A: {str(e)}', 'danger')
+    
+    # For GET request, populate form with existing data
     elif request.method == 'GET':
         form.question.data = qa.question
         form.answer.data = qa.answer
-    return render_template('admin/edit_qa.html', form=form)
+    
+    # Pass both form and qa_id to template
+    return render_template('admin/edit_qa.html', form=form, qa_id=qa_id, qa=qa)
 
 @app.route('/admin/delete/<int:qa_id>', methods=['POST'])
 @login_required
@@ -280,13 +313,42 @@ def delete_qa(qa_id):
     flash('Q&A deleted successfully', 'success')
     return redirect(url_for('admin_dashboard'))
 
+# In app.py, add this route
+@app.route('/admin/feedback_stats')
+@login_required
+def feedback_stats():
+    qas = QA.query.order_by(QA.priority_score.desc()).all()
+    return render_template('admin/feedback_stats.html', qas=qas)
+
 @app.route('/admin/logout')
 @login_required
 def admin_logout():
     logout_user()
     return redirect(url_for('index'))
 
-#app = Flask(__name__)
-#if __name__ == '__main__':
-    #port = int(os.getenv("PORT", 5000))
-    #app.run(host="0.0.0.0", port=port, debug=True)
+if __name__ == '__main__':
+    # Create the database tables
+    with app.app_context():
+        db.create_all()
+        
+        # Create admin user if it doesn't exist
+        admin_username = os.getenv('ADMIN_USERNAME')
+        admin_password = os.getenv('ADMIN_PASSWORD')
+        
+        if admin_username and admin_password:
+            admin = Admin.query.filter_by(username=admin_username).first()
+            if not admin:
+                logging.info(f"Creating new admin user with username: {admin_username}")
+                hashed_password = bcrypt.generate_password_hash(admin_password).decode('utf-8')
+                admin = Admin(username=admin_username, password=hashed_password)
+                db.session.add(admin)
+                db.session.commit()
+                logging.info(f"Admin user '{admin_username}' created successfully")
+            else:
+                logging.info(f"Admin user '{admin_username}' already exists")
+        else:
+            logging.error("ADMIN_USERNAME or ADMIN_PASSWORD not set in environment variables")
+    
+    # Run the application
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)

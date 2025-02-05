@@ -1,0 +1,52 @@
+<!-- Create new template: templates/admin/feedback_stats.html -->
+{% extends "admin/base.html" %}
+
+{% block title %}Feedback Statistics{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Feedback Statistics</h2>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="admin-table w-full">
+            <thead>
+                <tr>
+                    <th>Question</th>
+                    <th>Times Asked</th>
+                    <th>👍 Positive</th>
+                    <th>👎 Negative</th>
+                    <th>Priority Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for qa in qas %}
+                <tr class="hover:bg-gray-50">
+                    <td class="py-4 px-6">{{ qa.question }}</td>
+                    <td class="py-4 px-6">{{ qa.times_asked }}</td>
+                    <td class="py-4 px-6 text-green-600">{{ qa.positive_feedback }}</td>
+                    <td class="py-4 px-6 text-red-600">{{ qa.negative_feedback }}</td>
+                    <td class="py-4 px-6">
+                        <div class="flex items-center">
+                            <div class="w-20 bg-gray-200 rounded h-2 mr-2">
+                                <div class="bg-blue-600 rounded h-2" style="width: {{ (qa.priority_score * 100)|round }}%"></div>
+                            </div>
+                            <span>{{ "%.2f"|format(qa.priority_score) }}</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+        <h3 class="font-semibold mb-2">How Priority Score is Calculated:</h3>
+        <p class="text-gray-600">
+            Priority Score = (Positive Feedback / Total Feedback) * (1 + Total Feedback / 100)<br>
+            This ensures that answers with more feedback and higher positive ratios get higher priority.
+        </p>
+    </div>
+</div>
+{% endblock %}

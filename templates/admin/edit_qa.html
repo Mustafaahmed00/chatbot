@@ -11,7 +11,7 @@
         </a>
     </div>
 
-    <form method="POST" class="space-y-6">
+    <form method="POST" action="{{ url_for('edit_qa', qa_id=qa_id) }}" class="space-y-6">
         {{ form.hidden_tag() }}
         
         <div class="form-group">
@@ -86,6 +86,7 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
 {% block scripts %}
 <script>
@@ -129,5 +130,4 @@ document.getElementById('deleteModal').addEventListener('click', function(e) {
     }
 });
 </script>
-{% endblock %}
 {% endblock %}

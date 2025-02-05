@@ -357,3 +357,293 @@ button {
     background-color: #f1f1f1;
     border-radius: 5px;
 }
+/* Admin Panel Styles */
+.admin-layout {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.admin-header {
+    background: #1a73e8;
+    padding: 1rem 2rem;
+    color: white;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-nav {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.admin-nav a {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.admin-nav a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.admin-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #374151;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.form-input:focus {
+    border-color: #1a73e8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+.form-input.error {
+    border-color: #dc2626;
+}
+
+/* Button Styles */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #1557b0;
+}
+
+.btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+}
+
+.btn-secondary:hover {
+    background-color: #e5e7eb;
+}
+
+.btn-danger {
+    background-color: #dc2626;
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background-color: #b91c1c;
+}
+
+/* Preview Section */
+.preview-section {
+    background-color: #f9fafb;
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.preview-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #374151;
+}
+
+/* Dashboard Table */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th {
+    background-color: #f9fafb;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+}
+
+.admin-table td {
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Error and Success Messages */
+.flash-message {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.flash-success {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+.flash-error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-layout {
+        padding: 1rem;
+    }
+    
+    .admin-card {
+        padding: 1.5rem;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+/* Table Specific Styles */
+.admin-table th {
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.admin-table td {
+    vertical-align: top;
+}
+
+/* Icon Button Styles */
+.btn-icon {
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.btn-icon i {
+    font-size: 1rem;
+}
+
+.btn-icon:hover {
+    transform: translateY(-1px);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .admin-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .admin-table th,
+    .admin-table td {
+        padding: 0.75rem 1rem;
+    }
+}
+/* Input field styles */
+.form-group {
+    position: relative;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem; /* Added left padding for icon */
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.form-input:focus {
+    border-color: #1a73e8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+/* Fix for autofill background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px white inset;
+    transition: background-color 5000s ease-in-out 0s;
+}
+.admin-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.admin-nav-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.admin-header {
+    background-color: #1a73e8;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.chatbot-link {
+    color: #1a73e8;
+    text-decoration: underline;
+    word-break: break-all;
+    transition: color 0.2s;
+}
+
+.chatbot-link:hover {
+    color: #1557b0;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .chatbot-link {
+    color: #8ab4f8;
+}
+
+[data-theme="dark"] .chatbot-link:hover {
+    color: #adc8ff;
+}

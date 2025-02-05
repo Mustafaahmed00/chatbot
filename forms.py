@@ -8,7 +8,7 @@ class AdminLoginForm(FlaskForm):
                          validators=[DataRequired(), Length(min=4, max=100)],
                          render_kw={"placeholder": "Enter username", "class": "form-input"})
     password = PasswordField('Password', 
-                           validators=[DataRequired(), Length(min=6)],
+                           validators=[DataRequired(), Length(min=4)],
                            render_kw={"placeholder": "Enter password", "class": "form-input"})
     submit = SubmitField('Login', 
                         render_kw={"class": "btn btn-primary w-full"})

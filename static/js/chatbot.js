@@ -116,6 +116,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return 'session_' + Math.random().toString(36).substr(2, 9);
     }
 
+    function makeLinksClickable(text) {
+        // Regex to detect URLs
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        
+        // Replace URLs with anchor tags
+        return text.replace(urlRegex, function(url) {
+            return `<a href="${url}" target="_blank" class="chatbot-link">${url}</a>`;
+        });
+    }
+
     // Add a "Translate to English" button only if the text is not in English
     function addTranslateButton(messageDiv, text, responseLang) {
         if (responseLang === 'en') {
@@ -155,69 +165,69 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Message handling
+    // Message handling
     function addMessage(text, type, responseId = null, responseLang = 'en') {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${type}`;
-        
-        const bubble = document.createElement('div');
-        bubble.className = 'message-content';
-        
-        if (type === 'bot') {
-            const lines = text.split('\n').map(line => {
-                line = line.trim();
-                if (line.startsWith('-')) {
-                    return `<li>${line.substring(1).trim()}</li>`;
-                }
-                return `<p>${line}</p>`;
-            });
-
-            const hasBullets = lines.some(line => line.includes('<li>'));
-            bubble.innerHTML = hasBullets 
-                ? `<ul>${lines.join('')}</ul>` 
-                : lines.join('');
-                
-            // Add feedback buttons for bot messages
-            if (responseId) {
-                const feedbackHtml = createFeedbackButtons(responseId);
-                bubble.innerHTML += feedbackHtml;
-
-                // Add event listeners after the buttons are added to the DOM
-                setTimeout(() => {
-                    const feedbackContainer = bubble.querySelector('.feedback-buttons');
-                    if (feedbackContainer) {
-                        const positiveBtn = feedbackContainer.querySelector('.positive');
-                        const negativeBtn = feedbackContainer.querySelector('.negative');
-                        
-                        positiveBtn.addEventListener('click', () => submitFeedback(responseId, true));
-                        negativeBtn.addEventListener('click', () => submitFeedback(responseId, false));
-                    }
-                }, 0);
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'message-content';
+    
+    if (type === 'bot') {
+        const lines = text.split('\n').map(line => {
+            line = line.trim();
+            if (line.startsWith('-')) {
+                return `<li>${makeLinksClickable(line.substring(1).trim())}</li>`;
             }
+            return `<p>${makeLinksClickable(line)}</p>`;
+        });
 
-            // Add translation button only if the response is not in English
-            addTranslateButton(messageDiv, text, responseLang);
-        } else {
-            bubble.textContent = text;
+        const hasBullets = lines.some(line => line.includes('<li>'));
+        bubble.innerHTML = hasBullets 
+            ? `<ul>${lines.join('')}</ul>` 
+            : lines.join('');
+            
+        // Add feedback buttons for bot messages
+        if (responseId) {
+            const feedbackHtml = createFeedbackButtons(responseId);
+            bubble.innerHTML += feedbackHtml;
+
+            // Add event listeners after the buttons are added to the DOM
+            setTimeout(() => {
+                const feedbackContainer = bubble.querySelector('.feedback-buttons');
+                if (feedbackContainer) {
+                    const positiveBtn = feedbackContainer.querySelector('.positive');
+                    const negativeBtn = feedbackContainer.querySelector('.negative');
+                    
+                    positiveBtn.addEventListener('click', () => submitFeedback(responseId, true));
+                    negativeBtn.addEventListener('click', () => submitFeedback(responseId, false));
+                }
+            }, 0);
         }
 
-        messageDiv.appendChild(bubble);
-        messagesContainer.appendChild(messageDiv);
-        
-        // Scroll calculation
-        const messageHeight = messageDiv.offsetHeight;
-        const containerHeight = messagesContainer.offsetHeight;
-        const scrollPosition = messagesContainer.scrollTop;
-        const totalScrollHeight = messagesContainer.scrollHeight;
-        
-        // If it's a bot message, scroll to show just the start of the message
-        if (type === 'bot') {
-            const newScrollPosition = totalScrollHeight - containerHeight - messageHeight;
-            messagesContainer.scrollTop = newScrollPosition;
-        } else {
-            // For user messages, scroll to bottom as before
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
+        // Add translation button only if the response is not in English
+        addTranslateButton(messageDiv, text, responseLang);
+    } else {
+        bubble.textContent = text;
     }
+
+    messageDiv.appendChild(bubble);
+    messagesContainer.appendChild(messageDiv);
+    
+    // Scroll calculation
+    const messageHeight = messageDiv.offsetHeight;
+    const containerHeight = messagesContainer.offsetHeight;
+    const totalScrollHeight = messagesContainer.scrollHeight;
+    
+    // If it's a bot message, scroll to show just the start of the message
+    if (type === 'bot') {
+        const newScrollPosition = totalScrollHeight - containerHeight - messageHeight;
+        messagesContainer.scrollTop = newScrollPosition;
+    } else {
+        // For user messages, scroll to bottom as before
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+}
 
     // Event listeners
     header.addEventListener('click', (e) => {
