@@ -1,5 +1,4 @@
 # Ignore the .env file (contains sensitive information)
-.env
 
 database.db
 
