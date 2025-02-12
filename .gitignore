@@ -36,5 +36,3 @@ dist/
 build/
 *.egg-info/
 
-# Ignore all .json files
-*.json
