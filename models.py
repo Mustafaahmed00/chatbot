@@ -59,3 +59,16 @@ class ResponseFeedback(db.Model):
     feedback_metadata = db.Column(db.JSON)
 
     qa = db.relationship('QA', backref=db.backref('feedbacks', lazy=True))
+
+class Conversation(db.Model):
+    __tablename__ = 'conversation'
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.String(100), nullable=False)
+    user_message = db.Column(db.Text, nullable=False)
+    bot_response = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_language = db.Column(db.String(10), default='en')
+    response_time = db.Column(db.Float)  # Response time in seconds
+    
+    def __repr__(self):
+        return f'<Conversation {self.session_id[:10]}...>'

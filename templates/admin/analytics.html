@@ -1,0 +1,173 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <div class="admin-header">
+        <h1>Analytics Dashboard</h1>
+        <p>Monitor chatbot performance and user engagement</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-comments"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ analytics.total_conversations }}</h3>
+                <p>Total Conversations</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-thumbs-up"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ analytics.positive_feedback }}</h3>
+                <p>Positive Feedback</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-thumbs-down"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ analytics.negative_feedback }}</h3>
+                <p>Negative Feedback</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-percentage"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ "%.1f"|format(analytics.satisfaction_rate) }}%</h3>
+                <p>Satisfaction Rate</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Conversations -->
+    <div class="admin-card">
+        <h2>Recent Conversations</h2>
+        <div class="table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Session ID</th>
+                        <th>User Message</th>
+                        <th>Bot Response</th>
+                        <th>Language</th>
+                        <th>Response Time</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for conv in analytics.recent_conversations %}
+                    <tr>
+                        <td>{{ conv.session_id[:10] }}...</td>
+                        <td>{{ conv.user_message[:50] }}{% if conv.user_message|length > 50 %}...{% endif %}</td>
+                        <td>{{ conv.bot_response[:50] }}{% if conv.bot_response|length > 50 %}...{% endif %}</td>
+                        <td>{{ conv.user_language }}</td>
+                        <td>{{ "%.2f"|format(conv.response_time) }}s</td>
+                        <td>{{ conv.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Popular Questions -->
+    <div class="admin-card">
+        <h2>Popular Questions</h2>
+        <div class="table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Question</th>
+                        <th>Times Asked</th>
+                        <th>Positive Feedback</th>
+                        <th>Negative Feedback</th>
+                        <th>Priority Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for qa in analytics.popular_questions %}
+                    <tr>
+                        <td>{{ qa.question[:50] }}{% if qa.question|length > 50 %}...{% endif %}</td>
+                        <td>{{ qa.times_asked }}</td>
+                        <td>{{ qa.positive_feedback }}</td>
+                        <td>{{ qa.negative_feedback }}</td>
+                        <td>{{ "%.2f"|format(qa.priority_score) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #1a73e8;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.stat-content h3 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+    color: #1a73e8;
+}
+
+.stat-content p {
+    margin: 5px 0 0 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: 15px;
+    }
+}
+</style>
+{% endblock %} 
